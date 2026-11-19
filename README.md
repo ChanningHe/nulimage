@@ -8,6 +8,7 @@ Distroless, rootless container images, rebuilt automatically when upstream relea
 |---|---|---|
 | [caddy](images/caddy) | Caddy web server with plugins (`full` and `lite`) | `ghcr.io/channinghe/caddy` |
 | [tailscale-derp](images/tailscale-derp) | Tailscale DERP relay server (`derper`) | `ghcr.io/channinghe/tailscale-derp` |
+| [traefik](images/traefik) | Traefik reverse proxy with dashboard, built from source | `ghcr.io/channinghe/traefik` |
 
 ## Tags
 

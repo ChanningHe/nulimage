@@ -1,0 +1,19 @@
+# File provider config for test.sh: Host(file.test) is routed through the
+# local plugin to Traefik's own ping endpoint.
+http:
+  routers:
+    file:
+      rule: Host(`file.test`)
+      entryPoints: [http]
+      middlewares: [addheader]
+      service: self
+  middlewares:
+    addheader:
+      plugin:
+        addheader:
+          value: nimg-plugin-ok
+  services:
+    self:
+      loadBalancer:
+        servers:
+          - url: http://127.0.0.1:8080

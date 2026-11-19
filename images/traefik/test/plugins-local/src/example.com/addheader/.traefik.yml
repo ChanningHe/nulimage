@@ -1,0 +1,7 @@
+displayName: Add header (nulimage test)
+type: middleware
+runtime: yaegi
+import: example.com/addheader
+summary: Sets one response header; used by images/traefik/test.sh.
+testData:
+  value: test
