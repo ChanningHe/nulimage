@@ -43,19 +43,20 @@ func cmdPush(args []string, root string, stdout, stderr io.Writer) error {
 	variant := fs.String("variant", "", "variant to push")
 	flavor := fs.String("flavor", "", "flavor to push")
 	registry := fs.String("registry", "", "registry prefix, e.g. ghcr.io/owner")
+	sha := fs.String("sha", "", "full git commit sha, set as the revision label and annotation")
 	metaFile := fs.String("metadata-file", "", "keep bake's metadata JSON here (default: a temp file)")
 	pos, err := parseInterspersed(fs, args)
 	if err != nil {
 		return usageErr("%v", err)
 	}
-	if len(pos) != 1 {
-		return usageErr("push needs exactly one <image>")
+	if len(pos) != 1 || *sha == "" {
+		return usageErr("push needs exactly one <image> and --sha")
 	}
 	t, err := loadTarget(root, pos[0], *variant, *flavor, *registry)
 	if err != nil {
 		return err
 	}
-	out, err := bake.RenderPush(t.img, t.variant, t.flavor, t.registry)
+	out, err := bake.RenderPush(t.img, t.variant, t.flavor, t.registry, *sha)
 	if err != nil {
 		return err
 	}

@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
 
 	"github.com/channinghe/nulimage/tools/nimgctl/internal/spec"
@@ -14,8 +15,10 @@ const (
 	imagesDir     = "images"
 	dockerfile    = "Dockerfile"
 	localRegistry = "nimg.local"
-	sourceURL     = "https://github.com/channinghe/nulimage"
+	sourceURL     = "https://github.com/ChanningHe/nulimage"
 )
+
+var revisionRe = regexp.MustCompile(`^[0-9a-f]{40}$`)
 
 // LocalRef is the tag `nimgctl build` loads into the local daemon.
 func LocalRef(image, variant, flavor string) string {
@@ -35,15 +38,16 @@ type Group struct {
 
 // Target is one variant x flavor build of one image.
 type Target struct {
-	Context    string            `json:"context"`
-	Dockerfile string            `json:"dockerfile"`
-	Stage      string            `json:"target,omitempty"`
-	Args       map[string]string `json:"args"`
-	Platforms  []string          `json:"platforms"`
-	Tags       []string          `json:"tags,omitempty"`
-	Labels     map[string]string `json:"labels"`
-	Output     []string          `json:"output,omitempty"`
-	Attest     []string          `json:"attest,omitempty"`
+	Context     string            `json:"context"`
+	Dockerfile  string            `json:"dockerfile"`
+	Stage       string            `json:"target,omitempty"`
+	Args        map[string]string `json:"args"`
+	Platforms   []string          `json:"platforms"`
+	Tags        []string          `json:"tags,omitempty"`
+	Labels      map[string]string `json:"labels"`
+	Output      []string          `json:"output,omitempty"`
+	Attest      []string          `json:"attest,omitempty"`
+	Annotations []string          `json:"annotations,omitempty"`
 }
 
 // Render returns indented bake JSON with one target per variant x flavor of
@@ -67,13 +71,24 @@ func TargetName(image, variant, flavor string) string {
 // RenderPush returns bake JSON with one target, the given variant x flavor of
 // img, that pushes every platform to registry/<image> by digest, untagged,
 // with max-mode provenance and an SBOM attached. Tags are applied later by
-// `nimgctl promote`, after the digest has passed its tests.
-func RenderPush(img spec.Image, variant, flavor, registry string) ([]byte, error) {
+// `nimgctl promote`, after the digest has passed its tests. revision is the
+// full git commit sha of the build; it is added as a label, and every label
+// is also set as an index annotation, which is what a registry shows for a
+// multi-platform image (GHCR: package description and source repository).
+func RenderPush(img spec.Image, variant, flavor, registry, revision string) ([]byte, error) {
+	if !revisionRe.MatchString(revision) {
+		return nil, fmt.Errorf("revision %q must be a full 40-character lower-case git sha", revision)
+	}
 	name := TargetName(img.Name, variant, flavor)
 	t := newTarget(img, variant, flavor)
 	t.Tags = nil
+	t.Labels["org.opencontainers.image.revision"] = revision
 	t.Output = []string{fmt.Sprintf("type=image,name=%s/%s,push-by-digest=true,name-canonical=true,push=true", registry, img.Name)}
 	t.Attest = []string{"type=provenance,mode=max", "type=sbom"}
+	for k, v := range t.Labels {
+		t.Annotations = append(t.Annotations, "index:"+k+"="+v)
+	}
+	sort.Strings(t.Annotations)
 	return encode(File{
 		Group:  map[string]Group{"default": {Targets: []string{name}}},
 		Target: map[string]Target{name: t},
@@ -134,10 +149,23 @@ func newTarget(img spec.Image, variant, flavor string) Target {
 		Args:       args,
 		Platforms:  img.Platforms,
 		Tags:       []string{LocalRef(img.Name, variant, flavor)},
-		Labels: map[string]string{
-			"org.opencontainers.image.version": img.Version,
-			"org.opencontainers.image.title":   img.Name,
-			"org.opencontainers.image.source":  sourceURL,
-		},
+		Labels:     labels(img),
 	}
+}
+
+// labels are the OCI labels of every build of img; empty optional fields of
+// nimg.yaml are left out.
+func labels(img spec.Image) map[string]string {
+	l := map[string]string{
+		"org.opencontainers.image.version": img.Version,
+		"org.opencontainers.image.title":   img.Name,
+		"org.opencontainers.image.source":  sourceURL,
+	}
+	if img.Description != "" {
+		l["org.opencontainers.image.description"] = img.Description
+	}
+	if img.Licenses != "" {
+		l["org.opencontainers.image.licenses"] = img.Licenses
+	}
+	return l
 }

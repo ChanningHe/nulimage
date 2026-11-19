@@ -25,6 +25,7 @@ const (
 	fileName    = "nimg.yaml"
 	imagesDir   = "images"
 	maxVersion  = 100 // leaves room for suffixes inside the 128-char tag limit
+	maxText     = 256 // description and licenses become OCI labels and annotations
 )
 
 var (
@@ -55,11 +56,13 @@ func (v Variant) EffectiveSuffix(flavor string) string {
 
 // Image is a validated nimg.yaml with defaults applied.
 type Image struct {
-	Name      string             `yaml:"name"`
-	Version   string             `yaml:"version"`
-	Platforms []string           `yaml:"platforms"`
-	Flavors   []string           `yaml:"flavors"`
-	Variants  map[string]Variant `yaml:"variants"`
+	Name        string             `yaml:"name"`
+	Version     string             `yaml:"version"`
+	Description string             `yaml:"description"` // one line, shown on the package page
+	Licenses    string             `yaml:"licenses"`    // SPDX expression of the upstream software
+	Platforms   []string           `yaml:"platforms"`
+	Flavors     []string           `yaml:"flavors"`
+	Variants    map[string]Variant `yaml:"variants"`
 }
 
 // VariantNames returns the variant names in sorted order.
@@ -147,6 +150,12 @@ func validate(img Image, dir string) error {
 	if err := validateVersion(img.Version); err != nil {
 		return err
 	}
+	if err := validateText("description", img.Description); err != nil {
+		return err
+	}
+	if err := validateText("licenses", img.Licenses); err != nil {
+		return err
+	}
 	if err := validateList("platforms", img.Platforms, allPlatforms); err != nil {
 		return err
 	}
@@ -164,6 +173,21 @@ func validateVersion(v string) error {
 		return fmt.Errorf("version: %q must not contain whitespace", v)
 	case len(v) > maxVersion || !versionRe.MatchString(v):
 		return fmt.Errorf("version: %q is not usable as a registry tag", v)
+	}
+	return nil
+}
+
+// validateText bounds an optional free-text field that ends up in an OCI
+// label and in a bake annotation, where a newline or control byte would break
+// the annotation syntax.
+func validateText(field, v string) error {
+	if len(v) > maxText {
+		return fmt.Errorf("%s: longer than %d bytes", field, maxText)
+	}
+	for _, r := range v {
+		if r < 0x20 || r == 0x7f {
+			return fmt.Errorf("%s: must be one line without control characters", field)
+		}
 	}
 	return nil
 }

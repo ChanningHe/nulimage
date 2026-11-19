@@ -1,4 +1,6 @@
 name: caddy
+description: Caddy web server with extra plugins, distroless and rootless
+licenses: Apache-2.0
 version: 2.11.7 # renovate: datasource=go depName=github.com/caddyserver/caddy/v2 extractVersion=^v(?<version>.+)$
 variants:
   full:

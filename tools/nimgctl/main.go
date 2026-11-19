@@ -26,7 +26,7 @@ const usage = `usage:
   nimgctl test <image>... | --all [--variant <v>] [--flavor <f>] [--ref <ref>]
   nimgctl scan <image>... | --all [--variant <v>] [--flavor <f>] [--ref <ref>]
   nimgctl verify-base <image>... | --all
-  nimgctl push <image> --variant <v> --flavor <f> --registry <reg> [--metadata-file <path>]
+  nimgctl push <image> --variant <v> --flavor <f> --registry <reg> --sha <git-sha> [--metadata-file <path>]
   nimgctl promote <image> --variant <v> --flavor <f> --registry <reg> --sha <git-sha> --digest sha256:<hex>
 `
 

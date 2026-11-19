@@ -154,7 +154,7 @@ jobs:
           FLAVOR: ${{ matrix.flavor }}
         run: |
           set -euo pipefail
-          ref=$("$RUNNER_TEMP/nimgctl" push "$IMAGE" --variant "$VARIANT" --flavor "$FLAVOR" --registry "$REGISTRY")
+          ref=$("$RUNNER_TEMP/nimgctl" push "$IMAGE" --variant "$VARIANT" --flavor "$FLAVOR" --registry "$REGISTRY" --sha "$GITHUB_SHA")
           echo "pushed $ref"
           mkdir digest
           echo "$ref" > digest/ref

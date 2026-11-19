@@ -1,3 +1,5 @@
 name: tailscale-derp
+description: Tailscale DERP relay server (derper), distroless and rootless
+licenses: BSD-3-Clause
 version: 1.102.5 # renovate: datasource=github-releases depName=tailscale/tailscale extractVersion=^v(?<version>.+)$
 flavors: [release, debug]

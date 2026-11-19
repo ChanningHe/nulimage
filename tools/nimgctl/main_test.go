@@ -42,7 +42,7 @@ fi
 func TestPushPrintsOnlyTheDigestRef(t *testing.T) {
 	calls := fakeDocker(t)
 	meta := filepath.Join(t.TempDir(), "meta.json")
-	code, out, errOut := runCmd(t, fixtureRoot(t), "push", "hello", "--variant", "default", "--flavor", "release",
+	code, out, errOut := runCmd(t, fixtureRoot(t), "push", "hello", "--sha", "0123456789abcdef0123456789abcdef01234567", "--variant", "default", "--flavor", "release",
 		"--registry", "localhost:5000/nimg", "--metadata-file", meta)
 	if code != 0 {
 		t.Fatalf("code=%d err=%q", code, errOut)
@@ -58,7 +58,7 @@ func TestPushPrintsOnlyTheDigestRef(t *testing.T) {
 
 func TestPushWithoutMetadataFileUsesTempFile(t *testing.T) {
 	fakeDocker(t)
-	code, out, errOut := runCmd(t, fixtureRoot(t), "push", "hello", "--variant", "default", "--flavor", "debug", "--registry", "r")
+	code, out, errOut := runCmd(t, fixtureRoot(t), "push", "hello", "--variant", "default", "--flavor", "debug", "--registry", "r", "--sha", "0123456789abcdef0123456789abcdef01234567")
 	if code != 0 || out != "r/hello@"+testDigest+"\n" {
 		t.Fatalf("code=%d out=%q err=%q", code, out, errOut)
 	}
@@ -173,11 +173,13 @@ func TestRunExitCodes(t *testing.T) {
 		{"scan filter matches nothing", []string{"scan", "hello", "--flavor", "nope"}, 1},
 		{"scan unknown image", []string{"scan", "nope"}, 1},
 		{"changed neither", []string{"changed", "--all", "main"}, 2},
-		{"push no image", []string{"push", "--variant", "default", "--flavor", "release", "--registry", "r"}, 2},
-		{"push no registry", []string{"push", "hello", "--variant", "default", "--flavor", "release"}, 2},
-		{"push unknown variant", []string{"push", "hello", "--variant", "nope", "--flavor", "release", "--registry", "r"}, 1},
-		{"push bad registry", []string{"push", "hello", "--variant", "default", "--flavor", "release", "--registry", "r,push=false"}, 1},
-		{"push unknown image", []string{"push", "nope", "--variant", "default", "--flavor", "release", "--registry", "r"}, 1},
+		{"push no image", []string{"push", "--variant", "default", "--flavor", "release", "--registry", "r", "--sha", "0123456789abcdef0123456789abcdef01234567"}, 2},
+		{"push no sha", []string{"push", "hello", "--variant", "default", "--flavor", "release", "--registry", "r"}, 2},
+		{"push short sha", []string{"push", "hello", "--variant", "default", "--flavor", "release", "--registry", "r", "--sha", "0123456"}, 1},
+		{"push no registry", []string{"push", "hello", "--variant", "default", "--flavor", "release", "--sha", "0123456789abcdef0123456789abcdef01234567"}, 2},
+		{"push unknown variant", []string{"push", "hello", "--variant", "nope", "--flavor", "release", "--registry", "r", "--sha", "0123456789abcdef0123456789abcdef01234567"}, 1},
+		{"push bad registry", []string{"push", "hello", "--variant", "default", "--flavor", "release", "--registry", "r,push=false", "--sha", "0123456789abcdef0123456789abcdef01234567"}, 1},
+		{"push unknown image", []string{"push", "nope", "--variant", "default", "--flavor", "release", "--registry", "r", "--sha", "0123456789abcdef0123456789abcdef01234567"}, 1},
 		{"promote no digest", []string{"promote", "hello", "--variant", "default", "--flavor", "release", "--registry", "r", "--sha", "abc1234"}, 2},
 		{"promote no sha", []string{"promote", "hello", "--variant", "default", "--flavor", "release", "--registry", "r", "--digest", testDigest}, 2},
 		{"promote bad digest", []string{"promote", "hello", "--variant", "default", "--flavor", "release", "--registry", "r", "--sha", "abc1234", "--digest", "sha256:abc"}, 1},

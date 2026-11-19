@@ -43,6 +43,8 @@ func TestLoadExplicit(t *testing.T) {
 	root := t.TempDir()
 	writeImage(t, root, "caddy", `name: caddy
 version: 2.11.7
+description: Caddy web server, with plugins
+licenses: Apache-2.0
 platforms: [linux/arm64]
 flavors: [release]
 variants:
@@ -55,7 +57,8 @@ variants:
 	}
 	if !reflect.DeepEqual(img.Platforms, []string{"linux/arm64"}) ||
 		!reflect.DeepEqual(img.Flavors, []string{"release"}) ||
-		img.Variants["lite"].Suffix != "-lite" || img.Variants["lite"].Args["VARIANT"] != "lite" {
+		img.Variants["lite"].Suffix != "-lite" || img.Variants["lite"].Args["VARIANT"] != "lite" ||
+		img.Description != "Caddy web server, with plugins" || img.Licenses != "Apache-2.0" {
 		t.Fatalf("unexpected image %+v", img)
 	}
 }
@@ -73,6 +76,8 @@ func TestLoadRejects(t *testing.T) {
 		{"missing version", "name: x\n", "nimg.yaml: version"},
 		{"version whitespace", "name: x\nversion: \"1 0\"\n", "nimg.yaml: version"},
 		{"version bad char", "name: x\nversion: \"1/0\"\n", "nimg.yaml: version"},
+		{"multi-line description", "name: x\nversion: 1\ndescription: \"a\\nb\"\n", "nimg.yaml: description"},
+		{"long licenses", "name: x\nversion: 1\nlicenses: " + strings.Repeat("a", 257) + "\n", "nimg.yaml: licenses"},
 		{"bad platform", "name: x\nversion: 1\nplatforms: [linux/s390x]\n", "nimg.yaml: platforms[0]"},
 		{"empty platforms", "name: x\nversion: 1\nplatforms: []\n", "nimg.yaml: platforms"},
 		{"bad flavor", "name: x\nversion: 1\nflavors: [fast]\n", "nimg.yaml: flavors[0]"},

@@ -12,10 +12,12 @@ import (
 
 func caddy() spec.Image {
 	return spec.Image{
-		Name:      "caddy",
-		Version:   "2.11.7",
-		Platforms: []string{"linux/amd64", "linux/arm64"},
-		Flavors:   []string{"release", "debug"},
+		Name:        "caddy",
+		Version:     "2.11.7",
+		Description: "Caddy, with plugins",
+		Licenses:    "Apache-2.0",
+		Platforms:   []string{"linux/amd64", "linux/arm64"},
+		Flavors:     []string{"release", "debug"},
 		Variants: map[string]spec.Variant{
 			"lite": {Suffix: "-lite", Args: map[string]string{"VARIANT": "lite"}},
 			"full": {Suffix: "", Args: map[string]string{"VARIANT": "full"}},
@@ -67,9 +69,11 @@ func TestRender(t *testing.T) {
 		Platforms:  []string{"linux/amd64", "linux/arm64"},
 		Tags:       []string{"nimg.local/caddy:lite-debug"},
 		Labels: map[string]string{
-			"org.opencontainers.image.version": "2.11.7",
-			"org.opencontainers.image.title":   "caddy",
-			"org.opencontainers.image.source":  "https://github.com/channinghe/nulimage",
+			"org.opencontainers.image.version":     "2.11.7",
+			"org.opencontainers.image.title":       "caddy",
+			"org.opencontainers.image.source":      "https://github.com/ChanningHe/nulimage",
+			"org.opencontainers.image.description": "Caddy, with plugins",
+			"org.opencontainers.image.licenses":    "Apache-2.0",
 		},
 	}
 	if !reflect.DeepEqual(got, want) {
@@ -117,8 +121,10 @@ func TestRenderStage(t *testing.T) {
 	}
 }
 
+const rev = "0123456789abcdef0123456789abcdef01234567"
+
 func TestRenderPush(t *testing.T) {
-	out, err := RenderPush(caddy(), "lite", "debug", "ghcr.io/o")
+	out, err := RenderPush(caddy(), "lite", "debug", "ghcr.io/o", rev)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -140,5 +146,45 @@ func TestRenderPush(t *testing.T) {
 	}
 	if !reflect.DeepEqual(tg.Platforms, caddy().Platforms) || tg.Args["VARIANT"] != "lite" || tg.Args["FLAVOR"] != "debug" || tg.Args["VERSION"] != "2.11.7" {
 		t.Fatalf("unexpected target: %+v", tg)
+	}
+	wantAnn := []string{
+		"index:org.opencontainers.image.description=Caddy, with plugins",
+		"index:org.opencontainers.image.licenses=Apache-2.0",
+		"index:org.opencontainers.image.revision=" + rev,
+		"index:org.opencontainers.image.source=https://github.com/ChanningHe/nulimage",
+		"index:org.opencontainers.image.title=caddy",
+		"index:org.opencontainers.image.version=2.11.7",
+	}
+	if !reflect.DeepEqual(tg.Annotations, wantAnn) {
+		t.Fatalf("annotations %q\nwant %q", tg.Annotations, wantAnn)
+	}
+	if tg.Labels["org.opencontainers.image.revision"] != rev {
+		t.Fatalf("labels %v", tg.Labels)
+	}
+}
+
+func TestRenderPushRejectsRevision(t *testing.T) {
+	for _, r := range []string{"", "0123456", strings.ToUpper(rev), rev + "0"} {
+		if _, err := RenderPush(caddy(), "lite", "debug", "ghcr.io/o", r); err == nil {
+			t.Errorf("revision %q: want error", r)
+		}
+	}
+}
+
+// Local builds carry no revision or annotations; optional fields are omitted.
+func TestRenderLabels(t *testing.T) {
+	out, err := Render([]spec.Image{caddy(), hello()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	f := decode(t, out)
+	c := f.Target[TargetName("caddy", "full", "release")]
+	if c.Labels["org.opencontainers.image.description"] != "Caddy, with plugins" || c.Labels["org.opencontainers.image.licenses"] != "Apache-2.0" ||
+		c.Labels["org.opencontainers.image.revision"] != "" || len(c.Annotations) != 0 {
+		t.Fatalf("caddy labels %v annotations %v", c.Labels, c.Annotations)
+	}
+	h := f.Target[TargetName("hello", "default", "release")]
+	if _, ok := h.Labels["org.opencontainers.image.description"]; ok {
+		t.Fatalf("hello has no description: %v", h.Labels)
 	}
 }
