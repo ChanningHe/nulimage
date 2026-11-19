@@ -1,0 +1,10 @@
+name: caddy
+version: 2.11.7 # renovate: datasource=go depName=github.com/caddyserver/caddy/v2 extractVersion=^v(?<version>.+)$
+variants:
+  full:
+    suffix: ""
+    args: {VARIANT: full}
+  lite:
+    suffix: "-lite"
+    args: {VARIANT: lite}
+flavors: [release, debug]

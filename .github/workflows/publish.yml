@@ -1,0 +1,366 @@
+name: publish
+
+# Tags on ghcr.io only ever move to a digest that passed policy, the functional
+# test and the scan natively on amd64 and arm64:
+#   push (by digest, untagged) -> verify (both arches) -> promote (tags + attestation)
+# `plan` picks the images to publish: those changed since the last successful
+# full publish run on main (or all of them when there is none), so a run that
+# GitHub cancelled while pending is never lost.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image:
+        description: Image to publish (empty = all images)
+        required: false
+        default: ""
+
+# A partial dispatch must not become the baseline of the next run's diff: it
+# gets another title, and `plan` only trusts runs titled "publish".
+run-name: ${{ inputs.image != '' && format('publish only {0}', inputs.image) || 'publish' }}
+
+permissions: {}
+
+# Serialize publishes: first attempts run in push order, so a newer commit's
+# promote always follows an older one's. Concurrency cannot order a RE-RUN of an
+# older run's failed jobs, though, which would roll latest/major/minor back to
+# the old commit. `promote` therefore refuses re-runs (run_attempt > 1) unless
+# GITHUB_SHA is still the head of main. Pending runs may be cancelled by GitHub;
+# `plan` makes that safe.
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io/channinghe
+  # BuildKit builds and pushes the releases, so it is pinned like every other input.
+  # Renovate keeps tag and digest current (custom manager in renovate.json5).
+  # renovate: datasource=docker depName=moby/buildkit
+  BUILDKIT_IMAGE: moby/buildkit:v0.34.2@sha256:c5f8862f52499773af85bc07695b2379ef08e8002352b0df2c4864c91d78dabe
+
+jobs:
+  plan:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read # gh run list
+    outputs:
+      has_work: ${{ steps.plan.outputs.has_work }}
+      matrix: ${{ steps.plan.outputs.matrix }}
+      verify_matrix: ${{ steps.plan.outputs.verify_matrix }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Plan
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ONLY_IMAGE: ${{ inputs.image }}
+        run: |
+          set -euo pipefail
+          nimgctl="$RUNNER_TEMP/nimgctl"
+          go build -o "$nimgctl" ./tools/nimgctl
+
+          if [ -n "$ONLY_IMAGE" ]; then
+            matrix=$("$nimgctl" changed --all | jq -c --arg i "$ONLY_IMAGE" '{include: [.include[] | select(.image == $i)]}')
+            if [ "$(jq '.include | length' <<<"$matrix")" -eq 0 ]; then
+              echo "unknown image: $ONLY_IMAGE" >&2
+              exit 1
+            fi
+          else
+            # Baseline: head of the last successful publish run that covered all
+            # images (those are titled exactly "publish", see run-name).
+            base=$(gh run list --workflow publish.yml --branch main --status success --limit 30 \
+              --json headSha,displayTitle \
+              --jq '[.[] | select(.displayTitle == "publish")][0].headSha // empty')
+            if [ -n "$base" ] && git cat-file -e "${base}^{commit}" 2>/dev/null; then
+              echo "changes since last successful publish: $base"
+              matrix=$("$nimgctl" changed "$base")
+            else
+              echo "no usable previous publish run: publishing all images"
+              matrix=$("$nimgctl" changed --all)
+            fi
+          fi
+
+          echo "$matrix"
+          {
+            echo "matrix=$matrix"
+            echo "has_work=$(jq '.include | length > 0' <<<"$matrix")"
+            # one row per combo and native runner
+            echo "verify_matrix=$(jq -c '{include: [.include[] as $e | ("ubuntu-24.04", "ubuntu-24.04-arm") as $r | $e + {runner: $r}]}' <<<"$matrix")"
+          } >> "$GITHUB_OUTPUT"
+
+  push:
+    needs: plan
+    # An empty matrix is an error in GitHub Actions: skip when nothing changed.
+    if: needs.plan.outputs.has_work == 'true'
+    name: push ${{ matrix.image }} ${{ matrix.variant }} ${{ matrix.flavor }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Build nimgctl
+        run: go build -o "$RUNNER_TEMP/nimgctl" ./tools/nimgctl
+
+      # Before any registry login: nothing is built on a distroless base whose
+      # cosign signature does not verify (same check as ci.yml).
+      - name: Verify distroless signatures
+        env:
+          IMAGE: ${{ matrix.image }}
+        run: '"$RUNNER_TEMP/nimgctl" verify-base "$IMAGE"'
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          driver-opts: image=${{ env.BUILDKIT_IMAGE }}
+
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      # No QEMU: Go cross-compiles on the build platform and runtime stages
+      # have no RUN. The digest ref is the only line nimgctl prints.
+      - name: Push by digest
+        env:
+          IMAGE: ${{ matrix.image }}
+          VARIANT: ${{ matrix.variant }}
+          FLAVOR: ${{ matrix.flavor }}
+        run: |
+          set -euo pipefail
+          ref=$("$RUNNER_TEMP/nimgctl" push "$IMAGE" --variant "$VARIANT" --flavor "$FLAVOR" --registry "$REGISTRY")
+          echo "pushed $ref"
+          mkdir digest
+          echo "$ref" > digest/ref
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: digest-${{ matrix.image }}-${{ matrix.variant }}-${{ matrix.flavor }}
+          path: digest/ref
+          if-no-files-found: error
+          retention-days: 7
+
+  # verify and promote run per combo, not per run: `!cancelled()` instead of the
+  # implicit success() lets a combo continue when another combo's job failed.
+  # A combo whose push failed has no digest artifact, so its verify fails.
+  verify:
+    needs: [plan, push]
+    if: ${{ !cancelled() && needs.plan.outputs.has_work == 'true' }}
+    name: verify ${{ matrix.image }} ${{ matrix.variant }} ${{ matrix.flavor }} (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.verify_matrix) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      # A package that was just created is private until its visibility is set,
+      # so pulls right after the first push need credentials.
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: digest-${{ matrix.image }}-${{ matrix.variant }}-${{ matrix.flavor }}
+          path: digest
+
+      - name: Build nimgctl
+        run: go build -o "$RUNNER_TEMP/nimgctl" ./tools/nimgctl
+
+      - name: Digest ref
+        id: ref
+        env:
+          IMAGE: ${{ matrix.image }}
+        run: |
+          set -euo pipefail
+          ref=$(cat digest/ref)
+          [[ "$ref" =~ ^${REGISTRY//./\\.}/${IMAGE//./\\.}@sha256:[0-9a-f]{64}$ ]] || { echo "unexpected digest ref" >&2; exit 1; }
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      # Native on this runner's arch: docker pulls the matching platform.
+      - name: Test digest
+        env:
+          IMAGE: ${{ matrix.image }}
+          VARIANT: ${{ matrix.variant }}
+          FLAVOR: ${{ matrix.flavor }}
+          REF: ${{ steps.ref.outputs.ref }}
+        run: '"$RUNNER_TEMP/nimgctl" test "$IMAGE" --variant "$VARIANT" --flavor "$FLAVOR" --ref "$REF"'
+
+      - name: Scan digest
+        env:
+          IMAGE: ${{ matrix.image }}
+          VARIANT: ${{ matrix.variant }}
+          FLAVOR: ${{ matrix.flavor }}
+          REF: ${{ steps.ref.outputs.ref }}
+          GRYPE_REGISTRY_AUTH_AUTHORITY: ghcr.io
+          GRYPE_REGISTRY_AUTH_USERNAME: ${{ github.actor }}
+          GRYPE_REGISTRY_AUTH_PASSWORD: ${{ github.token }}
+        run: '"$RUNNER_TEMP/nimgctl" scan "$IMAGE" --variant "$VARIANT" --flavor "$FLAVOR" --ref "$REF"'
+
+      # Marker: this runner verified exactly this digest. Only reached when the
+      # test and the scan above passed.
+      - name: Write marker
+        env:
+          REF: ${{ steps.ref.outputs.ref }}
+        run: |
+          mkdir verified
+          echo "$REF" > verified/ref
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: verified-${{ matrix.image }}-${{ matrix.variant }}-${{ matrix.flavor }}-${{ matrix.runner }}
+          path: verified/ref
+          if-no-files-found: error
+          retention-days: 7
+
+  # Needs no other combo to have succeeded: the first steps require both
+  # runners' markers of THIS combo and fail it before any tag moves. The run
+  # still ends failed if any combo failed, so `plan` retries it next time.
+  promote:
+    needs: [plan, verify]
+    if: ${{ !cancelled() && needs.plan.outputs.has_work == 'true' }}
+    name: promote ${{ matrix.image }} ${{ matrix.variant }} ${{ matrix.flavor }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+      id-token: write # sign the attestation
+      attestations: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      # Stale-run gate, before anything can move a tag. Only re-runs need it (see
+      # the concurrency comment); first attempts are ordered by the concurrency
+      # group, and gating them would fail every run during which main moved on.
+      # A run refused here ends failed, so it is never a `plan` baseline; the run
+      # of the newer commit publishes its changes.
+      - name: Refuse to promote a re-run of a commit that is not the head of main
+        if: ${{ github.run_attempt > 1 }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          head=$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)
+          if [[ ! "$head" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "cannot determine the head of main: '$head'" >&2
+            exit 1
+          fi
+          if [ "$head" != "$GITHUB_SHA" ]; then
+            echo "refusing to promote $GITHUB_SHA: main is at $head" >&2
+            exit 1
+          fi
+
+      # checkout before the downloads: it cleans the workspace.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      # Gate: both native verifications of this combo must have passed
+      # (download by exact name fails when a marker is missing).
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: verified-${{ matrix.image }}-${{ matrix.variant }}-${{ matrix.flavor }}-ubuntu-24.04
+          path: verified/amd64
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: verified-${{ matrix.image }}-${{ matrix.variant }}-${{ matrix.flavor }}-ubuntu-24.04-arm
+          path: verified/arm64
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: digest-${{ matrix.image }}-${{ matrix.variant }}-${{ matrix.flavor }}
+          path: digest
+
+      - name: Markers match the pushed digest
+        run: |
+          set -euo pipefail
+          [ "$(cat verified/amd64/ref)" = "$(cat digest/ref)" ]
+          [ "$(cat verified/arm64/ref)" = "$(cat digest/ref)" ]
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          driver-opts: image=${{ env.BUILDKIT_IMAGE }}
+
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Build nimgctl
+        run: go build -o "$RUNNER_TEMP/nimgctl" ./tools/nimgctl
+
+      - name: Digest
+        id: digest
+        env:
+          IMAGE: ${{ matrix.image }}
+        run: |
+          set -euo pipefail
+          ref=$(cat digest/ref)
+          [[ "$ref" =~ ^${REGISTRY//./\\.}/${IMAGE//./\\.}@(sha256:[0-9a-f]{64})$ ]] || { echo "unexpected digest ref" >&2; exit 1; }
+          echo "digest=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+
+      - name: Promote tags
+        env:
+          IMAGE: ${{ matrix.image }}
+          VARIANT: ${{ matrix.variant }}
+          FLAVOR: ${{ matrix.flavor }}
+          DIGEST: ${{ steps.digest.outputs.digest }}
+          COMMIT: ${{ github.sha }}
+        run: |
+          "$RUNNER_TEMP/nimgctl" promote "$IMAGE" --variant "$VARIANT" --flavor "$FLAVOR" \
+            --registry "$REGISTRY" --sha "$COMMIT" --digest "$DIGEST"
+
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ matrix.image }}
+          subject-digest: ${{ steps.digest.outputs.digest }}
+          push-to-registry: true

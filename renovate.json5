@@ -1,0 +1,174 @@
+// Hosted Mend Renovate app: no postUpgradeTasks, no self-hosted options.
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: ["config:best-practices", ":semanticCommits"],
+  labels: ["dependencies"],
+  platformAutomerge: false,
+
+  customManagers: [
+    {
+      // images/<name>/nimg.yaml:
+      //   version: <v> # renovate: datasource=<ds> depName=<dep> [extractVersion=<regex>]
+      customType: "regex",
+      description: "Upstream version of an image, declared in nimg.yaml",
+      managerFilePatterns: ["/^images/[^/]+/nimg\\.yaml$/"],
+      matchStrings: [
+        "version:\\s*(?<currentValue>\\S+)\\s*# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: extractVersion=(?<extractVersion>\\S+))?",
+      ],
+    },
+    {
+      // The one place each tool image run by nimgctl is pinned (tag + digest):
+      // GrypeImage in scan/scan.go, CosignImage in distroless/distroless.go.
+      customType: "regex",
+      description: "Tool images run by nimgctl (Grype scanner, cosign verifier)",
+      managerFilePatterns: ["/^tools/nimgctl/internal/(scan/scan|distroless/distroless)\\.go$/"],
+      matchStrings: [
+        "// renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+const [A-Za-z]+Image = \"[^\":@]+:(?<currentValue>[^@\"]+)@(?<currentDigest>sha256:[a-f0-9]+)\"",
+      ],
+    },
+    {
+      // BUILDKIT_IMAGE in the workflow env (ci.yml, publish.yml), tag + digest:
+      //   # renovate: datasource=docker depName=moby/buildkit
+      //   BUILDKIT_IMAGE: moby/buildkit:<tag>@sha256:<digest>
+      customType: "regex",
+      description: "BuildKit image used by docker/setup-buildx-action",
+      managerFilePatterns: ["/^\\.github/workflows/[^/]+\\.ya?ml$/"],
+      matchStrings: [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+BUILDKIT_IMAGE: [^:@\\s]+:(?<currentValue>[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)",
+      ],
+    },
+  ],
+
+  packageRules: [
+    {
+      description: "Commit scope = image name for everything under images/<name>/",
+      matchFileNames: ["images/*/**"],
+      semanticCommitScope: "{{{replace 'images/([^/]+)/.*' '$1' packageFile}}}",
+    },
+    {
+      description: "Release and debug runtime bases move together",
+      matchDatasources: ["docker"],
+      matchPackageNames: ["gcr.io/distroless/**"],
+      groupName: "distroless",
+    },
+    {
+      description: "Let fresh upstream releases age before they reach an image",
+      matchManagers: ["custom.regex"],
+      matchFileNames: ["images/*/nimg.yaml"],
+      minimumReleaseAge: "3 days",
+    },
+    {
+      description: "Let fresh Go releases and upstream commits (pseudo-version digests) age before they reach a binary",
+      matchDatasources: ["go"],
+      minimumReleaseAge: "3 days",
+    },
+    {
+      description: "Tailscale: stable releases only (even minor numbers)",
+      matchDepNames: ["tailscale/tailscale"],
+      allowedVersions: "/^\\d+\\.\\d*[02468]\\.\\d+$/",
+      semanticCommitType: "feat",
+    },
+    // Caddy plugin modules (images/caddy/variants/*/go.mod). Scoped by path so
+    // the root tools module is unaffected.
+    {
+      description: "Caddy: refresh the whole Go module graph, not just direct deps (transitive CVE fixes land here); weekly to keep churn sane",
+      matchManagers: ["gomod"],
+      matchFileNames: ["images/caddy/**"],
+      matchDepTypes: ["indirect"],
+      enabled: true,
+      groupName: "caddy go indirect dependencies",
+      schedule: ["* 0-5 * * 1"],
+    },
+    {
+      description: "Caddy: indirect majors are new module paths nothing imports; go mod tidy would drop them",
+      matchManagers: ["gomod"],
+      matchFileNames: ["images/caddy/**"],
+      matchDepTypes: ["indirect"],
+      matchUpdateTypes: ["major"],
+      enabled: false,
+    },
+    {
+      description: "Caddy: indirect pseudo-versions follow their direct parent via go mod tidy; Renovate would track the default branch, which may be the wrong branch",
+      matchManagers: ["gomod"],
+      matchFileNames: ["images/caddy/**"],
+      matchDepTypes: ["indirect"],
+      matchUpdateTypes: ["digest"],
+      enabled: false,
+    },
+    {
+      description: "Caddy: the go directive is a minimum; the toolchain is pinned by the golang image",
+      matchManagers: ["gomod"],
+      matchFileNames: ["images/caddy/**"],
+      matchDepTypes: ["golang", "toolchain"],
+      enabled: false,
+    },
+    {
+      description: "Caddy: tidy go.sum after every module bump",
+      matchManagers: ["gomod"],
+      matchFileNames: ["images/caddy/**"],
+      postUpdateOptions: ["gomodTidy"],
+    },
+    {
+      description: "Automerge everything non-major once ci-ok is green",
+      matchUpdateTypes: ["minor", "patch", "pin", "digest", "pinDigest"],
+      automerge: true,
+    },
+    // Update policy (README "Update policy"). These rules come after the
+    // automerge rule above on purpose: later rules win.
+    {
+      description: "Policy: GitHub Actions and Dockerfile inputs age 7 days (github-tags and Docker Hub have release timestamps)",
+      matchManagers: ["github-actions", "dockerfile"],
+      minimumReleaseAge: "7 days",
+    },
+    {
+      description: "Policy: golang build image ages 3 days, then automerges after ci-ok",
+      matchManagers: ["dockerfile"],
+      matchPackageNames: ["golang"],
+      minimumReleaseAge: "3 days",
+    },
+    {
+      description: "Policy: Go toolchain of nimgctl (root go.mod go directive) ages 3 days, then automerges after ci-ok",
+      matchDatasources: ["golang-version"],
+      minimumReleaseAge: "3 days",
+    },
+    // go-mod-directive versioning reads `go 1.26.11` as ">= 1.26.11" and never
+    // proposes an update by default; the root go directive is nimgctl's exact
+    // toolchain pin (setup-go go-version-file), so bump it on every release.
+    {
+      description: "Policy: root go.mod go directive follows every Go release, patch included",
+      matchFileNames: ["go.mod"],
+      matchDepNames: ["go"],
+      matchDepTypes: ["golang"],
+      rangeStrategy: "bump",
+    },
+    {
+      description: "Policy: BuildKit ages 7 days (Docker Hub timestamps), then automerges after ci-ok",
+      matchDepNames: ["moby/buildkit"],
+      minimumReleaseAge: "7 days",
+    },
+    // gcr.io returns no release timestamp, so an age cannot apply; the default
+    // timestamp-required would hold every update forever.
+    {
+      description: "Policy: distroless has no delay and automerges once ci-ok is green (verify-base checks Google's cosign signature)",
+      matchDatasources: ["docker"],
+      matchPackageNames: ["gcr.io/distroless/**"],
+      minimumReleaseAge: "0 days",
+      minimumReleaseAgeBehaviour: "timestamp-optional",
+      automerge: true,
+    },
+    {
+      description: "Policy: Grype and cosign images (ghcr.io, no timestamp) get one PR a month and a human merges it",
+      matchDepNames: ["ghcr.io/anchore/grype", "ghcr.io/sigstore/cosign/cosign"],
+      minimumReleaseAgeBehaviour: "timestamp-optional",
+      schedule: ["* 0-5 1 * *"],
+      automerge: false,
+    },
+    // github-tags timestamps are commit dates, which the committer sets: a
+    // backdated release or a re-pointed tag passes the 7-day age at once.
+    {
+      description: "Policy: GitHub Actions are never automerged, any update type",
+      matchManagers: ["github-actions"],
+      automerge: false,
+    },
+  ],
+}

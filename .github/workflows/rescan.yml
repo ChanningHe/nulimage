@@ -1,0 +1,61 @@
+name: rescan
+
+# Nightly: scan every published image again (new CVEs appear without any
+# change here) and keep one issue "vuln: <image>" per vulnerable image.
+# Fixes flow through Renovate PRs; the issue closes when the scan is clean.
+# One job per architecture (Grype scans the platform the runner pulls); each
+# owns its own issue "vuln: <image> (<arch>)", see lib/rescan.sh.
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: rescan
+  cancel-in-progress: false
+
+jobs:
+  rescan:
+    name: rescan (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: amd64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      issues: write
+      packages: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Build nimgctl
+        run: go build -o "$RUNNER_TEMP/nimgctl" ./tools/nimgctl
+
+      - name: Rescan published images
+        env:
+          REGISTRY: ghcr.io/channinghe
+          RESCAN_ARCH: ${{ matrix.arch }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: NIMGCTL="$RUNNER_TEMP/nimgctl" lib/rescan.sh

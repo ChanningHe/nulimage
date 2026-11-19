@@ -1,0 +1,3 @@
+name: tailscale-derp
+version: 1.102.5 # renovate: datasource=github-releases depName=tailscale/tailscale extractVersion=^v(?<version>.+)$
+flavors: [release, debug]
