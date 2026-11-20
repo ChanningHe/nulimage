@@ -753,8 +753,8 @@ github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d/go.mod h1:01TrycV0kFyex
 github.com/mholt/acmez v0.1.3/go.mod h1:8qnn8QA/Ewx8E3ZSsmscqsIjhhpxuy9vqdgbX2ceceM=
 github.com/mholt/acmez/v3 v3.1.7 h1:XTqpuUcRdRoIBuDoI+M4mCnRnPTPN4rqH3Mb723Rg4U=
 github.com/mholt/acmez/v3 v3.1.7/go.mod h1:Lwv6P/czh/AOq+c99tAzP68/VP92s+8y+hDs4FCgxvo=
-github.com/mholt/caddy-l4 v0.1.2 h1:23rhxVar8F5Sl7sYKDgEReI1yT//+e8J7EtMwO2yJpU=
-github.com/mholt/caddy-l4 v0.1.2/go.mod h1:GTPu5/ptOkOhsH2DJKk+MxTqViSCLA+j8YL4wcpmmOs=
+github.com/mholt/caddy-l4 v0.1.3 h1:ug+1AJHyuC1h5nQy45mF3Ck2xjmvyLDhY/nIGsBjfhE=
+github.com/mholt/caddy-l4 v0.1.3/go.mod h1:0rcPveD8+Lq3iYSqlKxS3gQK1n+WQtiGIWY7uOH8Z3s=
 github.com/mholt/caddy-webdav v0.0.0-20260127042217-fa2f366b0d75 h1:PXPTUbQD59ErghFla/V4czJeRdwURX1VicmMtLsiw/E=
 github.com/mholt/caddy-webdav v0.0.0-20260127042217-fa2f366b0d75/go.mod h1:Btj3NBe2qQGXsg1T8QDqfovMACGLUBH1tFqFJBF52cA=
 github.com/microcosm-cc/bluemonday v1.0.1/go.mod h1:hsXNsILzKxV+sX77C5b8FSuKF00vh2OMYv+xgHpAMF4=
@@ -876,8 +876,8 @@ github.com/pierrec/lz4 v1.0.2-0.20190131084431-473cd7ce01a1/go.mod h1:3/3N9NVKO0
 github.com/pierrec/lz4 v2.0.5+incompatible/go.mod h1:pdkljMzZIN41W+lC3N2tnIh5sFi+IEE17M5jbnwPHcY=
 github.com/pierrec/lz4/v4 v4.1.33 h1:GjG1TJ1V4IzKP8L96muuuDNpTwd7D+l2ccXrjAbe014=
 github.com/pierrec/lz4/v4 v4.1.33/go.mod h1:7SE9MC2STkNtL4PIwGhjmyVwvILaGI9/COYQNBhKM/c=
-github.com/pires/go-proxyproto v0.15.0 h1:dTshmNbFm/D+0+sbrxUuddPOZ5Y0B7c5NhtsBkm6LqI=
-github.com/pires/go-proxyproto v0.15.0/go.mod h1:OXsCrKwrK2tXS9YrI5tkHx5xaQlO8FH3lFW76orFh24=
+github.com/pires/go-proxyproto v0.16.0 h1:9KYT/fM3wpjT8bdMEj/7FBcoiUG1KyzEjRYnPu+vz7A=
+github.com/pires/go-proxyproto v0.16.0/go.mod h1:n7yhg8yIfNl3KgYDCwBzmeUHNpKTVnUhcWpc7rV4RW4=
 github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
@@ -941,8 +941,8 @@ github.com/quic-go/go-ossfuzz-seeds v0.1.0 h1:APacT+iIaNF6fd8AGEiN3bT/Jtkd2jz4v4
 github.com/quic-go/go-ossfuzz-seeds v0.1.0/go.mod h1:3IOHRbJIc+L6YKMwfDtJAM9Vj9k0YY4muhuyUYk5tbk=
 github.com/quic-go/qpack v0.6.0 h1:g7W+BMYynC1LbYLSqRt8PBg5Tgwxn214ZZR34VIOjz8=
 github.com/quic-go/qpack v0.6.0/go.mod h1:lUpLKChi8njB4ty2bFLX2x4gzDqXwUpaO1DP9qMDZII=
-github.com/quic-go/quic-go v0.63.0 h1:LIFGHI4PFUhhw2dDD1ARHdCff143ffMHwZtbnbuJ78A=
-github.com/quic-go/quic-go v0.63.0/go.mod h1:RAro2j2yN9a9EiPACLHT9IB2NXCvGQmmo/alT0yYI0w=
+github.com/quic-go/quic-go v0.64.1 h1:BCNTP+6x6++OPKrGST2FR3f1tycx8O3QOA3QQv09g70=
+github.com/quic-go/quic-go v0.64.1/go.mod h1:RAro2j2yN9a9EiPACLHT9IB2NXCvGQmmo/alT0yYI0w=
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
@@ -1103,8 +1103,8 @@ github.com/tailscale/go-winio v0.0.0-20231025203758-c4f33415bf55/go.mod h1:4k4QO
 github.com/tailscale/tscert v0.0.0-20251216020129-aea342f6d747 h1:RnBbFMmodYzhC6adOjTbtUQXyzV8dcvKYbolzs6Qch0=
 github.com/tailscale/tscert v0.0.0-20251216020129-aea342f6d747/go.mod h1:ejPAJui3kVK4u5TgMtqtXlWf5HnKh9fLy5kvpaeuas0=
 github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07/go.mod h1:kDXzergiv9cbyO7IOYJZWg1U88JhDg3PB6klq9Hg2pA=
-github.com/things-go/go-socks5 v0.1.3 h1:W6lC9bUiuubcVVGU5BRRrwUP6k/7HEwrJm5O+mIUHDE=
-github.com/things-go/go-socks5 v0.1.3/go.mod h1:LZ99kKdQKnpwKv9P1Ilowna9cafg3cmYB/Dr1iagwDg=
+github.com/things-go/go-socks5 v0.1.4 h1:DF0OvKL4O1pxmSh2J/suagjyGV7+hduBblpldPOuVSM=
+github.com/things-go/go-socks5 v0.1.4/go.mod h1:LZ99kKdQKnpwKv9P1Ilowna9cafg3cmYB/Dr1iagwDg=
 github.com/timakin/bodyclose v0.0.0-20190721030226-87058b9bfcec/go.mod h1:Qimiffbc6q9tBWlVV6x0P9sat/ao1xEkREYPPj9hphk=
 github.com/timakin/bodyclose v0.0.0-20190930140734-f7f2e9bca95e/go.mod h1:Qimiffbc6q9tBWlVV6x0P9sat/ao1xEkREYPPj9hphk=
 github.com/tklauser/go-sysconf v0.4.0 h1:7H0uAN+7RkwWRaxhYXDLqa5V3LPrJeV8wmD9dRUgPQU=
@@ -1136,6 +1136,8 @@ github.com/viant/assertly v0.4.8/go.mod h1:aGifi++jvCrUaklKEKT0BU95igDNaqkvz+49u
 github.com/viant/toolbox v0.24.0/go.mod h1:OxMCG57V0PXuIP2HNQrtJf2CjqdmbrOx5EkMILuUhzM=
 github.com/viccon/sturdyc v1.1.6 h1:ISrV4YrmkakI1iON09gYNF4YA5gkR3ZOC5EErbJ3S8Q=
 github.com/viccon/sturdyc v1.1.6/go.mod h1:OCBEgG/i48uugKQ498UQlfMHmf5j8MYY8a4BApfVnMo=
+github.com/vnxme/hybrid v0.1.1 h1:m5HqqXDiLaJWSmTC/NFd1SaeK6NnA4DwO/PflEhlKKU=
+github.com/vnxme/hybrid v0.1.1/go.mod h1:rW6My0eL9Bzb6JMD5HcMGF1D2Hn1Y2Md/pbWAIVEXPw=
 github.com/weppos/publicsuffix-go v0.4.0/go.mod h1:z3LCPQ38eedDQSwmsSRW4Y7t2L8Ln16JPQ02lHAdn5k=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=
 github.com/x448/float16 v0.8.4/go.mod h1:14CWIYCyZA/cWjXOioeEpHeN/83MdbZDRQHoFcYsOfg=
