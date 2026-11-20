@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   changes:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     permissions:
       contents: read
@@ -49,7 +49,7 @@ jobs:
           echo "images=$(jq -c '[.include[].image] | unique' <<<"$matrix")" >> "$GITHUB_OUTPUT"
 
   unit:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: read
@@ -87,7 +87,7 @@ jobs:
   # Renovate automerges distroless base updates: this cosign keyless check of
   # every distroless digest (Google's signing identity) is what gates them.
   verify-base:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: read
@@ -148,7 +148,7 @@ jobs:
   ci-ok:
     if: always()
     needs: [changes, unit, verify-base, images]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     permissions: {}
     steps:
