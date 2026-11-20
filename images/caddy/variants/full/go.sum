@@ -189,8 +189,6 @@ github.com/caddy-dns/cloudflare v0.2.4/go.mod h1:Rge8GoKEa65RIUd1GQ9DmOmnjD9FMzt
 github.com/caddyserver/cache-handler v0.17.0 h1:p4k3Q1cPmTMJ4SpUleaOPlpTrsmQb7Sh2nO6G0Faixs=
 github.com/caddyserver/cache-handler v0.17.0/go.mod h1:3vi7weDyAep6dO0pDbR4gfp7lw9eGVPrxuAajNKwzWA=
 github.com/caddyserver/caddy/v2 v2.4.1/go.mod h1:pVJidKm47Cc5VDUrd2VQPSp/d1DzNj2mjg4FQouWEJM=
-github.com/caddyserver/caddy/v2 v2.11.7 h1:yj0Y4fYZGPkSvibBJ1sTWE33xC0fxztVyXEW5iIdUT4=
-github.com/caddyserver/caddy/v2 v2.11.7/go.mod h1:Hy0hh5OTFu/INfBPyvkzImXF4wh6O91jyrZLWeB0fx0=
 github.com/caddyserver/caddy/v2 v2.11.9 h1:bhZtcRKQOq0fuLvEgCdPYvUxXyGn9kzjG4lh2332DTE=
 github.com/caddyserver/caddy/v2 v2.11.9/go.mod h1:jctG0eTy0tC4ST/Q7GIPKIfxox7mhSCtcwlwF82HLVM=
 github.com/caddyserver/certmagic v0.13.1/go.mod h1:+zhQtEgLOyXRA/KRduHXNhGGdTeqRM4ePj8eBGD/2CQ=
@@ -265,12 +263,12 @@ github.com/daaku/go.zipexe v1.0.0/go.mod h1:z8IiR6TsVLEYKwXAoE/I+8ys/sDkgTzSL0CL
 github.com/danwakefield/fnmatch v0.0.0-20160403171240-cbb64ac3d964/go.mod h1:Xd9hchkHSWYkEqJwUGisez3G1QY8Ryz0sdWrLPMGjLk=
 github.com/darkweak/souin v1.7.9 h1:8rvm50jwv7UlzPiu1SyUmQsAs2a1T11yo5CpM/Lt/8w=
 github.com/darkweak/souin v1.7.9/go.mod h1:sEm7BVyXfuYYL1dGELqd6FRHmNg4/cVAO6kmIIKTOCE=
-github.com/darkweak/storages/core v0.0.22 h1:rtLWpzAhLDdfC27QS5gLvB6kFknyJrQ3G/Vi74eaSMQ=
-github.com/darkweak/storages/core v0.0.22/go.mod h1:bY5dNtTpdIinbM78nmiPIZ1WgwADIOXOW7JiXTuPSfY=
-github.com/darkweak/storages/otter v0.0.22 h1:nGxn/cYdqidB/pf2v49Qgzbh0VzGAgrjtOika/twfFg=
-github.com/darkweak/storages/otter v0.0.22/go.mod h1:esPSADY7oUgchPFNug5bf6T4aGFKsYFF8DexDX3dEkU=
-github.com/darkweak/storages/otter/caddy v0.0.22 h1:YcE7a6x+gtz0VarMno9nbA35gKwg0lgqmnJUm2Yso3o=
-github.com/darkweak/storages/otter/caddy v0.0.22/go.mod h1:AO0sEZ4K6/56YSJoHGX4R3c31Z8qb4gwLdo5T1Ia7fg=
+github.com/darkweak/storages/core v0.0.23 h1:UZs84xhNrcmOjmmGHZav29qQ9FRn2g/n+pINb1WbTtA=
+github.com/darkweak/storages/core v0.0.23/go.mod h1:bY5dNtTpdIinbM78nmiPIZ1WgwADIOXOW7JiXTuPSfY=
+github.com/darkweak/storages/otter v0.0.23 h1:1ae8w6nkWIhEFt4nxVDsvkHGtU5zCEy2d7Uevxsxqqg=
+github.com/darkweak/storages/otter v0.0.23/go.mod h1:CKy+DnjnqoHgYSTI/a+yKgbzS6p5YKxiBaBhNj/01hg=
+github.com/darkweak/storages/otter/caddy v0.0.23 h1:DUUsrJZtv1rUVd7/bgKJbjFu4yxDEa5t2rYQb5zSHdI=
+github.com/darkweak/storages/otter/caddy v0.0.23/go.mod h1:PpD4/cetb+rXlItd6VPbM3zech8w1CYl8ZizYrNtimg=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
@@ -1305,8 +1303,6 @@ golang.org/x/crypto v0.32.0/go.mod h1:ZnnJkOaASj8g0AjIduWNlq2NRxL0PlBrbKVyZ6V/Ug
 golang.org/x/crypto v0.33.0/go.mod h1:bVdXmD7IV/4GdElGPozy6U7lWdRXA4qyRVGJV57uQ5M=
 golang.org/x/crypto v0.58.0 h1:COkYLr4k7nDI4r6QtMML2AfzeIswWHAJthLS6K/M/54=
 golang.org/x/crypto v0.58.0/go.mod h1:Xh+kl5A+M0gMiWDytH2Hhr5Z7WbNCpv/eB/EFgfSk+w=
-golang.org/x/crypto/x509roots/fallback v0.0.0-20260929172509-b39ff6d641ec h1:6gLejUU4OPMnmDEz8DkDkWMoyDj2Ny5iUy1Ze3raJhs=
-golang.org/x/crypto/x509roots/fallback v0.0.0-20260929172509-b39ff6d641ec/go.mod h1:HPze8vhfG6fO06AM+VSvxRm4E3+5Yk375mgrJ5M2z1E=
 golang.org/x/crypto/x509roots/fallback v0.0.0-20261030153154-30a33513ff6d h1:5NBkmd8MXirajj6AAEpi4HFVJnVkBNPTL1ggYAKqaws=
 golang.org/x/crypto/x509roots/fallback v0.0.0-20261030153154-30a33513ff6d/go.mod h1:HPze8vhfG6fO06AM+VSvxRm4E3+5Yk375mgrJ5M2z1E=
 golang.org/x/exp v0.0.0-20190121172915-509febef88a4/go.mod h1:CJ0aWSM057203Lf6IL+f9T1iT9GByDxfZKAQTCR3kQA=
