@@ -12,7 +12,7 @@ require (
 	github.com/darkweak/storages/otter/caddy v0.0.23
 	github.com/ewen-lbh/caddy-i18n v0.8.2
 	github.com/fvbommel/caddy-combine-ip-ranges v0.0.1
-	github.com/hslatman/caddy-crowdsec-bouncer v0.14.2-0.20260909201224-ffdcb7c6f861
+	github.com/hslatman/caddy-crowdsec-bouncer v0.15.0
 	github.com/lolPants/caddy-requestid v1.1.2
 	github.com/lucaslorentz/caddy-docker-proxy/v2 v2.13.1
 	github.com/mholt/caddy-l4 v0.1.3
@@ -95,7 +95,7 @@ require (
 	github.com/go-openapi/jsonreference v1.0.3 // indirect
 	github.com/go-openapi/loads v0.25.3 // indirect
 	github.com/go-openapi/spec v1.0.1 // indirect
-	github.com/go-openapi/strfmt v0.27.3 // indirect
+	github.com/go-openapi/strfmt v0.27.4 // indirect
 	github.com/go-openapi/swag v0.29.2 // indirect
 	github.com/go-openapi/swag/cmdutils v0.29.2 // indirect
 	github.com/go-openapi/swag/conv v0.29.2 // indirect
