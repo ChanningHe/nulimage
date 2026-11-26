@@ -1,5 +1,5 @@
 name: traefik
 description: Traefik reverse proxy with dashboard, built from source, distroless and rootless
 licenses: MIT
-version: 3.7.19 # renovate: datasource=go depName=github.com/traefik/traefik/v3 extractVersion=^v(?<version>.+)$
+version: 3.8.0 # renovate: datasource=go depName=github.com/traefik/traefik/v3 extractVersion=^v(?<version>.+)$
 flavors: [release, debug]
